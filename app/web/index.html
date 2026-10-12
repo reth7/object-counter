@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Object Counter — Vrishabh Industries</title>
+<style>
+  :root { --accent:#1a6e3c; --bg:#f4f4f2; }
+  * { box-sizing:border-box; margin:0; }
+  body { font-family:system-ui,-apple-system,sans-serif; background:var(--bg); color:#222;
+         padding:14px; max-width:560px; margin:0 auto; }
+  h1 { font-size:1.15rem; margin-bottom:2px; color:var(--accent); }
+  .sub { font-size:.8rem; color:#777; margin-bottom:14px; }
+  .card { background:#fff; border-radius:12px; padding:14px; margin-bottom:14px;
+          box-shadow:0 1px 4px rgba(0,0,0,.08); }
+  .step { font-weight:600; font-size:.9rem; margin-bottom:8px; }
+  .step span { background:var(--accent); color:#fff; border-radius:50%;
+               display:inline-block; width:22px; height:22px; text-align:center;
+               line-height:22px; font-size:.8rem; margin-right:6px; }
+  input[type=file] { display:none; }
+  .btn { display:block; width:100%; padding:13px; border:none; border-radius:10px;
+         background:var(--accent); color:#fff; font-size:1rem; font-weight:600;
+         text-align:center; cursor:pointer; }
+  .btn.secondary { background:#e8e8e4; color:#333; }
+  .btn:disabled { background:#bbb; }
+  #canvasWrap { position:relative; margin-top:10px; display:none; touch-action:none; }
+  #imgCanvas { width:100%; border-radius:8px; display:block; }
+  .hint { font-size:.78rem; color:#888; margin-top:6px; }
+  .row { display:flex; gap:8px; align-items:center; margin-top:10px; }
+  .row label { font-size:.85rem; white-space:nowrap; }
+  input[type=range] { flex:1; accent-color:var(--accent); }
+  #thVal { font-size:.85rem; width:34px; text-align:right; }
+  #result { display:none; }
+  #countBig { font-size:2.6rem; font-weight:800; color:var(--accent); text-align:center; }
+  #meta { text-align:center; font-size:.8rem; color:#777; margin-bottom:8px; }
+  #annotated { width:100%; border-radius:8px; }
+  #err { color:#b00020; font-size:.85rem; margin-top:8px; display:none; }
+  .spinner { display:none; margin:10px auto; width:28px; height:28px;
+             border:3px solid #ddd; border-top-color:var(--accent);
+             border-radius:50%; animation:sp 1s linear infinite; }
+  @keyframes sp { to { transform:rotate(360deg); } }
+</style>
+</head>
+<body>
+<h1>Object Counter</h1>
+<div class="sub">Vrishabh Industries · test console</div>
+
+<div class="card">
+  <div class="step"><span>1</span>Photo of the frame / carton</div>
+  <button class="btn" id="pickBtn">📷 Take / choose photo</button>
+  <input type="file" id="fileInput" accept="image/*" capture="environment">
+  <div id="canvasWrap">
+    <canvas id="imgCanvas"></canvas>
+    <div class="hint">Drag a tight box around <b>one</b> object (cone tip / box face). Redraw to adjust.</div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="step"><span>2</span>Options</div>
+  <div class="row">
+    <label><input type="checkbox" id="rot"> Objects may be rotated (slower)</label>
+  </div>
+</div>
+
+<button class="btn" id="countBtn" disabled>Count objects</button>
+<div class="spinner" id="spin"></div>
+<div id="err"></div>
+
+<div class="card" id="result">
+  <div id="countBig">–</div>
+  <div id="meta"></div>
+  <img id="annotated" alt="annotated result">
+</div>
+
+<script>
+const canvas = document.getElementById('imgCanvas');
+const ctx = canvas.getContext('2d');
+let img = null, sel = null, drag = null;
+
+document.getElementById('pickBtn').onclick = () => fileInput.click();
+fileInput.onchange = e => {
+  const f = e.target.files[0]; if (!f) return;
+  const url = URL.createObjectURL(f);
+  img = new Image();
+  img.onload = () => {
+    canvas.width = img.naturalWidth; canvas.height = img.naturalHeight;
+    sel = null; redraw();
+    document.getElementById('canvasWrap').style.display = 'block';
+    updateBtn();
+  };
+  img.src = url;
+};
+
+function redraw() {
+  ctx.drawImage(img, 0, 0);
+  if (sel) {
+    ctx.save();
+    ctx.strokeStyle = '#1a6e3c'; ctx.lineWidth = Math.max(3, canvas.width/200);
+    ctx.setLineDash([10,6]);
+    ctx.strokeRect(sel.x, sel.y, sel.w, sel.h);
+    ctx.fillStyle = 'rgba(26,110,60,.15)';
+    ctx.fillRect(sel.x, sel.y, sel.w, sel.h);
+    ctx.restore();
+  }
+}
+
+function pos(e) {
+  const r = canvas.getBoundingClientRect();
+  const t = e.touches ? e.touches[0] : e;
+  return { x: (t.clientX - r.left) * canvas.width / r.width,
+           y: (t.clientY - r.top) * canvas.height / r.height };
+}
+function start(e){ if(!img) return; e.preventDefault(); drag = pos(e); sel = {x:drag.x,y:drag.y,w:0,h:0}; }
+function move(e){ if(!drag) return; e.preventDefault(); const p = pos(e);
+  sel = { x: Math.min(drag.x,p.x), y: Math.min(drag.y,p.y),
+          w: Math.abs(p.x-drag.x), h: Math.abs(p.y-drag.y) }; redraw(); }
+function end(){ drag = null; if (sel && (sel.w<8||sel.h<8)) sel = null; redraw(); updateBtn(); }
+canvas.addEventListener('mousedown', start); canvas.addEventListener('mousemove', move);
+window.addEventListener('mouseup', end);
+canvas.addEventListener('touchstart', start, {passive:false});
+canvas.addEventListener('touchmove', move, {passive:false});
+canvas.addEventListener('touchend', end);
+
+function updateBtn(){ countBtn.disabled = !(img && sel); }
+
+function canvasBlob(c){ return new Promise(r => c.toBlob(r, 'image/jpeg', 0.92)); }
+
+countBtn.onclick = async () => {
+  err.style.display='none'; result.style.display='none';
+  spin.style.display='block'; countBtn.disabled = true;
+  try {
+    // template = the selected crop
+    const tc = document.createElement('canvas');
+    tc.width = Math.round(sel.w); tc.height = Math.round(sel.h);
+    tc.getContext('2d').drawImage(img, sel.x, sel.y, sel.w, sel.h, 0, 0, tc.width, tc.height);
+    // scene = full image re-encoded
+    const sc = document.createElement('canvas');
+    sc.width = img.naturalWidth; sc.height = img.naturalHeight;
+    sc.getContext('2d').drawImage(img, 0, 0);
+
+    const fd = new FormData();
+    fd.append('template', await canvasBlob(tc), 't.jpg');
+    fd.append('scene', await canvasBlob(sc), 's.jpg');
+
+    const q = `?allow_rotation=${rot.checked}`;
+    const r = await fetch('/v1/count' + q, { method:'POST', body: fd });
+    if (!r.ok) throw new Error((await r.json()).detail || r.statusText);
+    const d = await r.json();
+    countBig.textContent = d.count;
+    meta.textContent = `confidence ${(d.confidence*100).toFixed(0)}% · ${d.processing_seconds}s · job ${d.job_id}`;
+    annotated.src = `/v1/result/${d.job_id}/annotated?ts=${Date.now()}`;
+    result.style.display = 'block';
+  } catch (ex) {
+    err.textContent = '⚠ ' + ex.message; err.style.display='block';
+  } finally {
+    spin.style.display='none'; countBtn.disabled = false;
+  }
+};
+</script>
+</body>
+</html>

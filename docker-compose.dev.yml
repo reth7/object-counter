@@ -1,0 +1,18 @@
+# Local laptop testing — no auth, no CPU pinning. DO NOT use in production.
+services:
+  object-counter:
+    build: .
+    container_name: object-counter-dev
+    restart: unless-stopped
+    environment:
+      DEV_MODE: "1"
+      TORCH_THREADS: "4"
+      RETENTION_DAYS: "7"
+      MAX_UPLOAD_MB: "15"
+      STORAGE_DIR: /data/uploads
+    volumes:
+      - counter_dev_data:/data/uploads
+    ports:
+      - "0.0.0.0:8090:8090"   # exposed on LAN so your phone can reach it
+volumes:
+  counter_dev_data:

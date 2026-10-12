@@ -1,0 +1,27 @@
+services:
+  object-counter:
+    build: .
+    container_name: object-counter
+    restart: unless-stopped
+    # ---- resource isolation: dedicate exactly 1 vCPU (core #3) + 1.5 GB RAM
+    cpuset: "3"
+    cpus: "1.0"
+    mem_limit: 2048m
+    memswap_limit: 2048m
+    environment:
+      API_KEYS: "${COUNTER_API_KEYS}"   # set in .env: erp_main:LONG_RANDOM_SECRET
+      RETENTION_DAYS: "7"
+      MAX_UPLOAD_MB: "10"
+      STORAGE_DIR: /data/uploads
+    volumes:
+      - counter_data:/data/uploads
+    ports:
+      - "127.0.0.1:8090:8090"   # bind to localhost only; nginx terminates TLS
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://localhost:8090/health')"]
+      interval: 60s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  counter_data:
