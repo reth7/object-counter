@@ -66,19 +66,19 @@ setting up API keys or a reverse proxy.
 1. **Make sure Docker Desktop is running**, then from the project root build and start
    the dev container:
 
-   ```bash
-   docker compose -f docker-compose.dev.yml up --build
-   ```
+```bash
+docker compose -f docker-compose.dev.yml up --build
+```
 
-   First build takes a few minutes (installs PyTorch/timm and bakes in the DINOv2
-   weights). Leave this running in the terminal — it logs each request.
+First build takes a few minutes (installs PyTorch/timm and bakes in the DINOv2
+weights). Leave this running in the terminal — it logs each request.
 
 2. **Confirm it's up** by checking the health endpoint:
 
-   ```bash
-   curl http://localhost:8090/health
-   # {"status":"ok","retention_days":7}
-   ```
+```bash
+curl http://localhost:8090/health
+# {"status":"ok","retention_days":7}
+```
 
 3. **Find the local IP to use.** `docker-compose.dev.yml` binds the container to
    `0.0.0.0:8090`, so it's reachable from any device on the same Wi-Fi/LAN — useful for
@@ -86,7 +86,7 @@ setting up API keys or a reverse proxy.
    IPv4 address:
 
    - **Windows (PowerShell):** `ipconfig` → look for "IPv4 Address" under your active
-     adapter (usually `192.168.x.x`).
+      adapter (usually `192.168.x.x`).
    - **macOS:** `ipconfig getifaddr en0`
    - **Linux:** `hostname -I`
 
@@ -134,17 +134,21 @@ memory use predictable regardless of the photo size an operator uploads.
 
 ## Screenshots
 
-Drop screenshots of the test console / interface and example counting results into
-`docs/screenshots/` and reference them below (markdown preview will render them once
-the files exist):
+**Cones — template vs. counted result**
 
-<!-- ![Test console](docs/screenshots/test-console.png) -->
-<!-- ![Counting result](docs/screenshots/counting-result.png) -->
-<!-- ![ERP integration view](docs/screenshots/erp-integration.png) -->
+| Template / scene | Counted result |
+|---|---|
+| ![Cones](docs/screenshots/cones.png) | ![Counted cones](docs/screenshots/counted_cones.png) |
+
+**Lira boxes — template vs. counted result**
+
+| Template / scene | Counted result |
+|---|---|
+| ![Lira boxes](docs/screenshots/lira_boxes.png) | ![Counted lira boxes](docs/screenshots/counted_lira_boxes.png) |
 
 ## Project layout
 
-```
+```sh
 app/
   main.py      FastAPI app: auth, rate limiting, upload handling, retention sweeper
   engine.py    Counting engine: propose -> verify -> auto-threshold
