@@ -57,6 +57,57 @@ docker compose -f docker-compose.dev.yml up --build
 This starts the service with auth disabled (`DEV_MODE=1`) on `http://localhost:8090`,
 with a minimal web UI at `/` for trying it out from a browser or phone on the LAN.
 
+## Testing the app with Docker
+
+The dev compose file (`docker-compose.dev.yml`) is the easiest way to try the whole
+flow end-to-end — upload a template, upload a scene, get a count back — without
+setting up API keys or a reverse proxy.
+
+1. **Make sure Docker Desktop is running**, then from the project root build and start
+   the dev container:
+
+   ```bash
+   docker compose -f docker-compose.dev.yml up --build
+   ```
+
+   First build takes a few minutes (installs PyTorch/timm and bakes in the DINOv2
+   weights). Leave this running in the terminal — it logs each request.
+
+2. **Confirm it's up** by checking the health endpoint:
+
+   ```bash
+   curl http://localhost:8090/health
+   # {"status":"ok","retention_days":7}
+   ```
+
+3. **Find the local IP to use.** `docker-compose.dev.yml` binds the container to
+   `0.0.0.0:8090`, so it's reachable from any device on the same Wi-Fi/LAN — useful for
+   testing from a phone camera against a factory-floor photo. Find the machine's LAN
+   IPv4 address:
+
+   - **Windows (PowerShell):** `ipconfig` → look for "IPv4 Address" under your active
+     adapter (usually `192.168.x.x`).
+   - **macOS:** `ipconfig getifaddr en0`
+   - **Linux:** `hostname -I`
+
+   Then open `http://<that-ip>:8090` — e.g. `http://192.168.1.42:8090` — on your phone
+   or another computer on the same network. Use `http://localhost:8090` if you're
+   testing on the same machine that's running Docker.
+
+4. **Use the test console** at that URL: take/choose a photo, draw a tight box around
+   one object to use as the template, submit, and the annotated result with the count
+   comes back in a few seconds.
+
+   You can also hit the API directly, e.g. with `curl` or the Python/PHP snippets in
+   [ERP_INTEGRATION.md](ERP_INTEGRATION.md) (set `DEV_MODE=1` as above to skip the
+   HMAC signing while testing).
+
+5. **Stop the container** with `Ctrl+C`, or `docker compose -f docker-compose.dev.yml down`.
+
+> Only use `docker-compose.dev.yml` for testing on a trusted LAN. It has no
+> authentication and no CPU/RAM limits. Use the plain `docker-compose.yml` (with API
+> keys and a reverse proxy) for anything production-facing.
+
 ## Deploying
 
 ```bash
@@ -80,6 +131,16 @@ the service still works but falls back to the weaker HOG-based verifier.
 Designed to run on light hardware: 1 CPU core, ~2 GB RAM, no GPU required. Image
 resolution is capped internally (1600px max dimension) to keep per-request latency and
 memory use predictable regardless of the photo size an operator uploads.
+
+## Screenshots
+
+Drop screenshots of the test console / interface and example counting results into
+`docs/screenshots/` and reference them below (markdown preview will render them once
+the files exist):
+
+<!-- ![Test console](docs/screenshots/test-console.png) -->
+<!-- ![Counting result](docs/screenshots/counting-result.png) -->
+<!-- ![ERP integration view](docs/screenshots/erp-integration.png) -->
 
 ## Project layout
 
